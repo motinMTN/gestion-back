@@ -3,7 +3,7 @@ name: Create GitHub Release
 on:
   push:
     tags:
-      - 'v*.*.*' # Dispara cuando haces push de un tag como v1.0.0
+      - 'v*.*.*' # Solo se activa con tags tipo v1.0.0
 
 jobs:
   release:
@@ -13,16 +13,26 @@ jobs:
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para obtener todo el historial de git
 
-      - name: Verificar que el tag proviene de la rama main
+      - name: Validar que el tag apunta al último commit de main
         run: |
-          BRANCH_NAME=$(git branch --contains ${{ github.sha }} | grep main || true)
-          if [ -z "$BRANCH_NAME" ]; then
-            echo "🚫 El tag no proviene de la rama main. Solo se permiten releases desde main."
+          echo "🔍 Validando que el tag apunte al último commit de main..."
+          git fetch origin main
+
+          MAIN_COMMIT=$(git rev-parse origin/main)
+          TAG_COMMIT=$(git rev-parse ${{ github.sha }})
+
+          echo "🔎 Commit en main: $MAIN_COMMIT"
+          echo "🔎 Commit del tag: $TAG_COMMIT"
+
+          if [ "$MAIN_COMMIT" != "$TAG_COMMIT" ]; then
+            echo "🚫 El tag no apunta al último commit de main. Release cancelado."
             exit 1
-          else
-            echo "✅ Tag válido desde main."
           fi
+
+          echo "✅ Tag válido: corresponde al último commit de main."
 
       - name: Crear release en GitHub
         uses: softprops/action-gh-release@v2
