@@ -1,0 +1,46 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Dispara cuando haces push de un tag como v1.0.0
+
+jobs:
+  release:
+    name: Publicar release automático
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Verificar que el tag proviene de la rama main
+        run: |
+          BRANCH_NAME=$(git branch --contains ${{ github.sha }} | grep main || true)
+          if [ -z "$BRANCH_NAME" ]; then
+            echo "🚫 El tag no proviene de la rama main. Solo se permiten releases desde main."
+            exit 1
+          else
+            echo "✅ Tag válido desde main."
+          fi
+
+      - name: Crear release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Versión Inicial - ${{ github.ref_name }}
+          body: |
+            ✅ Nuevas funcionalidades:
+            - Registro de usuarios con email
+            - Autenticación con JWT
+            - Panel de administración básico
+
+            🐞 Correcciones:
+            - Se corrigió bug en validación de formularios
+            - Ajuste en diseño responsive del login
+
+            📦 Dependencias actualizadas:
+            - React 18.2.0
+            - TailwindCSS 3.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
